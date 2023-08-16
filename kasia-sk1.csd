@@ -24,7 +24,9 @@ instr 1
 
     kEnv madsr .1, .2, .6, .4
     ;aOut vco2 p5, p4
-    aOut poscil3 0.5, kcps, giRAM
+    giTableLen ftlen giRAM
+    aPhs line        0,(giTableLen/sr) * (cpsmidinn(60)/p4),1
+    aOut tablei      aPhs, giRAM, 1
     outs aOut*kEnv, aOut*kEnv
 endin
 

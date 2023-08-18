@@ -1,17 +1,23 @@
 <Cabbage>
 form caption("KASIA SK1") size(400, 300), colour(51, 51, 51), guiMode("queue"), pluginId("ksk1")
-keyboard bounds(8, 158, 381, 95)
-checkbox bounds(22, 58, 100, 30) channel("rec") text("RECORD") colour:1(255, 0, 0, 255) colour:0(118, 0, 0, 255) 
+keyboard bounds(8, 196, 381, 95) channel("keyboard2") value(48)
+checkbox bounds(124, 80, 100, 30) channel("rec") text("RECORD") colour:1(255, 0, 0, 255) colour:0(118, 0, 0, 255) 
 
 label bounds(8, 8, 230, 42) channel("label10002") text("KASIA SK1")
 label bounds(240, 12, 154, 16) channel("label10003") text("sampling keyboard")
-checkbox bounds(22, 98, 100, 30) channel("loop") text("LOOP")
-combobox bounds(216, 98, 88, 24) channel("envelope") text("piano-like", "organ-like", "string-like", "flute-like", "slow flute") value(1)
-filebutton bounds(308, 38, 80, 40) channel("open") , populate("*.wav", ".", "0")
-filebutton bounds(308, 86, 80, 40) channel("save") text("Save file", "Save file"), mode("save"), populate("*.wav", ".", "0")
-combobox bounds(126, 102, 84, 20) channel("tone") value(1) text("piano", "trumpet", "choir", "pipe organ", "brass ensemble", "flute", "synth drum", "jazz organ", "SYNTH")
-label bounds(125, 68, 80, 17) channel("label10009") text("TONE")
-label bounds(219, 65, 75, 21) channel("label10010") text("ENV")
+checkbox bounds(10, 148, 80, 20) channel("loop") text("LOOP")
+combobox bounds(10, 124, 80, 20) channel("envelope") text("piano-like", "organ-like", "string-like", "flute-like", "slow flute") value(1)
+filebutton bounds(144, 116, 80, 30) channel("open") , populate("*.wav", ".", "0")
+filebutton bounds(144, 154, 80, 30) channel("save") text("Save file", "Save file"), mode("save"), populate("*.wav", ".", "0")
+combobox bounds(10, 80, 80, 20) channel("tone") value(1) text("piano", "trumpet", "choir", "pipe organ", "brass ensemble", "flute", "synth drum", "jazz organ", "SAMPLE")
+label bounds(10, 54, 80, 18) channel("label10009") text("TONE")
+label bounds(10, 102, 80, 18) channel("label10010") text("ENV")
+label bounds(143, 53, 80, 20) channel("label10011") text("SAMPLE")
+
+checkbox bounds(10, 170, 80, 20) channel("lofi") text("LOFI")
+label bounds(260, 54, 100, 20) channel("label10013") text("SYNTH")
+label bounds(257, 120, 117, 16) channel("label10014") text("coming soon™")
+label bounds(240, 32, 154, 16) channel("label10015") text("(by Severák)")
 </Cabbage>
 <CsoundSynthesizer>
 <CsOptions>
@@ -27,8 +33,8 @@ opcode  LoFi,a,akk
     ain,kbits,kfold xin                                 ; READ IN INPUT ARGUMENTS
     kvalues pow     2, kbits                            ; RAISES 2 TO THE POWER OF kbitdepth. THE OUTPUT VALUE REPRESENTS THE NUMBER OF POSSIBLE VALUES AT THAT PARTICULAR BIT DEPTH
     aout    =       (int((ain/0dbfs)*kvalues))/kvalues  ; BIT DEPTH REDUCE AUDIO SIGNAL
-    //aout    fold    aout, kfold                         ; APPLY SAMPLING RATE FOLDOVER
-            xout    aout                                ; SEND AUDIO BACK TO CALLER INSTRUMENT
+    aout    fold    aout, kfold                         ; APPLY SAMPLING RATE FOLDOVER
+    xout    aout                                ; SEND AUDIO BACK TO CALLER INSTRUMENT
 endop
 
 ; RAM filled with zeros
@@ -69,6 +75,7 @@ instr 1
 
     ia_envelope chnget "envelope"
     itone chnget "tone"
+    ilofi chnget "lofi"
     
     if ia_envelope == 1 then
         ; piano-like
@@ -90,10 +97,10 @@ instr 1
     endif
     
     if iloop==1 then
-        aOut flooper2 1, kcps/(cpsmidinn(60)*2), 0, 2, 0.25, giWaves[itone]
+        aOut flooper2 1, kcps/(cpsmidinn(60)), 0.3, 2, 0.25, giWaves[itone]
     else
         iTableLen ftlen giWaves[itone]
-        aPhs line        0,(iTableLen/sr) * ((cpsmidinn(60)*2)/p4),1
+        aPhs line        0,(iTableLen/sr) * ((cpsmidinn(60))/p4),1
         aOut tablei      aPhs, giWaves[itone], 1
         
         ; printks "L = %02f\n", 0.1, k(aPhs)
@@ -102,7 +109,13 @@ instr 1
         endif
     endif
     
-    outs aOut*kEnv*0.3, aOut*kEnv*0.3
+    aOut = aOut*kEnv
+    
+    if ilofi==1 then
+        aOut LoFi aOut, 8, 4
+    endif
+    
+    outs aOut*0.5, aOut*0.5
 endin
 
 gkRecDur    init    0

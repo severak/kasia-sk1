@@ -62,7 +62,7 @@ giEnvs[5] = 1
 giEnvs[6] = 4
 giEnvs[7] = 1
 giEnvs[8] = 2
-giEnvs[9] = 1
+giEnvs[9] = 2
 
 gSfilepath    init    ""
 
@@ -127,9 +127,7 @@ instr GUI ; checks controls panel
     
     kRec, kRecTrig cabbageGetValue "rec"
     if kRecTrig==1 && kRec==1 then
-        printks "REC!\n", 1
-        event "i", "Record", 0, 2
-        event "i", "beep", 2.1, 0.5
+        event "i", "waiting", 0, 10
     endif
     
     gSfilepath    chnget    "open"
@@ -155,14 +153,19 @@ instr GUI ; checks controls panel
     endif
 endin
 
-; TODO - waiting instrument to start recording only after gate treshold is overcame
-
-
-
 instr beep ; played out when sampling stops
     cabbageSetValue "rec", 0
+    cabbageSetValue "tone", 9, release()
     aOut vco2 0.3, 440, 12
-    kEnv linen 1, 0.2, 0.5, 0.2
+    kEnv linen 1, 0.1, 0.5, 0.1
+    outs aOut*kEnv, aOut*kEnv
+    prints "gkRecDur = %d\n", gkRecDur
+endin
+
+instr beep2 ; played out when sampling stops
+    cabbageSetValue "rec", 0
+    aOut vco2 0.3, 220, 0
+    kEnv linen 1, 0.1, 0.5, 0.1
     outs aOut*kEnv, aOut*kEnv
     prints "gkRecDur = %d\n", gkRecDur
 endin
@@ -187,6 +190,29 @@ instr    99    ; load sound file
  ;chnset Smessage, "stringbox"
 
 endin
+
+; from http://floss.booktype.pro/csound/l-amplitude-and-pitch-tracking/
+instr waiting
+ iThreshold =    0.02                 ; rms threshold
+ aSig, aSigB ins
+ kRms    rms     aSig                ; scan rms
+ ;aRms    follow    aSig, 0.01
+ kTrig   =       kRms > iThreshold ? 1 : 0  ; gate either 1 or zero
+ kTriggered init 0
+ printks "RMS = %02f\n", 0.1, kRms
+ 
+ if changed(kTrig)==1 && kTrig==1 then
+    event "i", "Record", 0, 2
+    event "i", "beep", 2.1, 0.5
+    kTriggered = 1
+    turnoff
+ endif
+ 
+ if release()==1 && kTriggered==0 then
+    event "i", "beep2", 0, .5
+ endif
+endin
+
 
 
 ; this does sampling itself

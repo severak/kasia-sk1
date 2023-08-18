@@ -142,6 +142,8 @@ instr GUI ; checks controls panel
     endif
 endin
 
+; TODO - waiting instrument to start recording only after gate treshold is overcame
+
 
 
 instr beep ; played out when sampling stops
